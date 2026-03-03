@@ -20,18 +20,26 @@ apply_styles()
 # ── Session state ────────────────────────────────────────────
 if "page" not in st.session_state:
     st.session_state.page = "Ana Sayfa"
+if "active_tool" not in st.session_state:
+    st.session_state.active_tool = None
 
 # ── Sidebar ──────────────────────────────────────────────────
 with st.sidebar:
+    # Force dark background for logo area
+    st.markdown("""
+        <div style='background-color:#0f0f0f; padding: 20px 0 10px 0;'>
+    """, unsafe_allow_html=True)
+    
     logo_path = os.path.join(os.path.dirname(__file__), "logo.png")
     if os.path.exists(logo_path):
         st.image(logo_path, width=70)
     else:
-        st.markdown("<h2 style='color:white; margin-bottom:20px;'>242</h2>", unsafe_allow_html=True)
-
+        st.markdown("<h2 style='color:white; margin:0;'>242</h2>", unsafe_allow_html=True)
+    
+    st.markdown("</div>", unsafe_allow_html=True)
     st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
 
-    # Use a highly styled option_menu
+    # Use a highly styled option_menu with forced dark theme
     selected = option_menu(
         menu_title=None,
         options=["Ana Sayfa", "Sitemap Checker", "Feed Checker", "Price Vortex"],
@@ -41,13 +49,14 @@ with st.sidebar:
             st.session_state.page
         ),
         styles={
-            "container": {"padding": "0!important", "background-color": "transparent"},
+            "container": {"padding": "0!important", "background-color": "#0f0f0f"},
             "icon": {"color": "#888", "font-size": "16px"},
             "nav-link": {
                 "font-size": "14px",
                 "text-align": "left",
                 "margin": "4px 0",
                 "color": "#bbb",
+                "background-color": "transparent",
                 "border-radius": "12px",
                 "padding": "12px 16px",
                 "transition": "all 0.2s ease",
@@ -63,18 +72,19 @@ with st.sidebar:
 
     if selected != st.session_state.page:
         st.session_state.page = selected
+        # If user clicks sidebar, reset homepage tool if it doesn't match
+        st.session_state.active_tool = None
         st.rerun()
 
     # Footer
     st.markdown("""
-    <div style="position:fixed;bottom:20px;left:0;width:240px;padding:0 24px;box-sizing:border-box;">
+    <div style="position:fixed;bottom:20px;left:0;width:240px;padding:0 24px;box-sizing:border-box; background-color:#0f0f0f;">
         <p style="color:#555;font-size:11px;margin:0;">© 2024 242</p>
     </div>
     """, unsafe_allow_html=True)
 
 # ── Main Content Area ──────────────────────────────────────────
 
-# If selected from sidebar but want to show on "Home" logic
 if st.session_state.page == "Ana Sayfa":
     # Hero
     st.markdown("""
@@ -101,6 +111,7 @@ if st.session_state.page == "Ana Sayfa":
         st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
         if st.button("Hemen Başla", key="qs_sitemap", use_container_width=True):
             st.session_state.active_tool = "sitemap"
+            st.rerun()
             
     with qs2:
         st.markdown("""
@@ -114,6 +125,7 @@ if st.session_state.page == "Ana Sayfa":
         st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
         if st.button("Hemen Başla", key="qs_feed", use_container_width=True):
             st.session_state.active_tool = "feed"
+            st.rerun()
 
     with qs3:
         st.markdown("""
@@ -127,9 +139,10 @@ if st.session_state.page == "Ana Sayfa":
         st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
         if st.button("Hemen Başla", key="qs_vortex", use_container_width=True):
             st.session_state.active_tool = "vortex"
+            st.rerun()
 
     # Render selected tool directly on home page if active_tool is set
-    if "active_tool" in st.session_state:
+    if st.session_state.active_tool:
         st.markdown("<hr style='margin: 40px 0; border:none; border-top:1px solid #eee;'>", unsafe_allow_html=True)
         if st.session_state.active_tool == "sitemap":
             show_sitemap_checker()

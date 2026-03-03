@@ -25,18 +25,31 @@ def apply_styles():
         border-right: none !important;
     }
     
-    /* Force option_menu to stay transparent and dark-themed */
-    [data-testid="stSidebar"] .nav-link {
+    /* 
+       CRITICAL: Force backgrounds to be dark in sidebar 
+       This targets the container and the menu items themselves
+    */
+    [data-testid="stSidebar"] [data-testid="stVerticalBlock"] {
+        background-color: #0f0f0f !important;
+    }
+    
+    /* Force option_menu transparency and dark theme */
+    .nav-link {
         background-color: transparent !important;
         color: #bbb !important;
     }
-    [data-testid="stSidebar"] .nav-link:hover {
+    .nav-link:hover {
         background-color: rgba(111, 85, 255, 0.1) !important;
         color: white !important;
     }
-    [data-testid="stSidebar"] .nav-link.active {
+    .nav-link.active {
         background-color: rgba(111, 85, 255, 0.15) !important;
         color: #6F55FF !important;
+    }
+    
+    /* Remove any white backgrounds from the option menu container */
+    .container-fluid {
+        background-color: transparent !important;
     }
 
     /* ── Headings ───────────────────────────────────── */
