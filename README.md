@@ -1,4 +1,4 @@
-# ikas Dijital Araçlar
+# Dijital Araçlar
 
 Dahili e-ticaret araçları. Sitemap denetimi, feed sağlık kontrolü ve fiyat karşılaştırması.
 
@@ -8,7 +8,7 @@ Dahili e-ticaret araçları. Sitemap denetimi, feed sağlık kontrolü ve fiyat 
 |------|----------|
 | 🧭 Sitemap Checker | Sitemap URL'lerini tarar, 404 ve hataları raporlar |
 | 🔗 Feed Checker | Google / Facebook feed ürün URL'lerini kontrol eder |
-| 🌪️ Price Vortex | ikas CSV ile Google Merchant feed'ini karşılaştırır |
+| 🌪️ Price Vortex | Ürün CSV ile Google Merchant feed'ini karşılaştırır |
 
 ## Kurulum
 

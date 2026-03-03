@@ -78,7 +78,7 @@ def show_price_vortex():
     <div style="padding: 32px 0 24px 0">
         <p style="color:#6F55FF; font-size:13px; font-weight:600; letter-spacing:1px; margin-bottom:6px;">ARAÇ 3</p>
         <h1 style="margin:0; font-size:2rem;">🌪️ Price Vortex</h1>
-        <p style="color:#666; margin-top:8px; font-size:15px;">ikas ürün CSV'nizi Google Merchant Center feed'iyle karşılaştırın. Fiyat ve stok uyuşmazlıklarını anında tespit edin.</p>
+        <p style="color:#666; margin-top:8px; font-size:15px;">Ürün CSV'nizi Google Merchant Center feed'iyle karşılaştırın. Fiyat ve stok uyuşmazlıklarını anında tespit edin.</p>
     </div>
     <hr style="border:none;border-top:1px solid #eee;margin-bottom:28px;">
     """, unsafe_allow_html=True)
@@ -86,8 +86,8 @@ def show_price_vortex():
     col1, col2 = st.columns(2, gap="large")
 
     with col1:
-        st.markdown("**① ikas Ürün CSV'si**")
-        csv_file = st.file_uploader("ikas CSV dışa aktarımını yükleyin", type=["csv"], key="csv_upload")
+        st.markdown("**① Ürün CSV'si**")
+        csv_file = st.file_uploader("CSV dışa aktarımını yükleyin", type=["csv"], key="csv_upload")
         if csv_file:
             st.success(f"Loaded: `{csv_file.name}`")
 
@@ -205,4 +205,4 @@ def show_price_vortex():
 
             st.dataframe(df_final, use_container_width=True)
     else:
-        st.info("Başlamak için ikas CSV'nizi yükleyin ve bir Google feed'i sağlayın.")
+        st.info("Başlamak için ürün CSV'nizi yükleyin ve bir Google feed'i sağlayın.")

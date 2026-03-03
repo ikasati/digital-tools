@@ -5,9 +5,8 @@ def apply_styles():
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
-    /* ── Hide sidebar collapse / re-open arrows ────── */
-    [data-testid="stSidebarCollapseButton"],
-    [data-testid="collapsedControl"] {
+    /* ── Hide sidebar collapse button (keep expand arrow) ── */
+    [data-testid="stSidebarCollapseButton"] {
         display: none !important;
     }
 

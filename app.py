@@ -7,7 +7,7 @@ from tools.price_vortex import show_price_vortex
 
 # ── Page Config ────────────────────────────────────────────
 st.set_page_config(
-    page_title="ikas Dijital Araçlar",
+    page_title="Dijital Araçlar",
     page_icon="⚡",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -21,11 +21,11 @@ if "page" not in st.session_state:
 
 # ── Sidebar ────────────────────────────────────────────────
 with st.sidebar:
-    logo_path = os.path.join(os.path.dirname(__file__), "ikas-logo-03.png")
+    logo_path = os.path.join(os.path.dirname(__file__), "logo.png")
     if os.path.exists(logo_path):
         st.image(logo_path, width=90)
     else:
-        st.markdown("### ikas")
+        st.markdown("### 242")
 
     st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
 
@@ -59,7 +59,7 @@ if st.session_state.page == "home":
 
     st.markdown("""
     <div style="padding:48px 0 32px 0;">
-        <p style="color:#6F55FF;font-size:13px;font-weight:600;letter-spacing:1.5px;margin-bottom:8px;text-transform:uppercase;">ikas Dijital Araçlar</p>
+        <p style="color:#6F55FF;font-size:13px;font-weight:600;letter-spacing:1.5px;margin-bottom:8px;text-transform:uppercase;">Dijital Araçlar</p>
         <h1 style="font-size:2.8rem;font-weight:800;color:#111;line-height:1.15;margin:0;">
             E-ticaret araçların.<br>Güçlendirilmiş.
         </h1>
