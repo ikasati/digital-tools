@@ -14,6 +14,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Apply global CSS
 apply_styles()
 
 # ── Session state ────────────────────────────────────────────
@@ -24,63 +25,60 @@ if "page" not in st.session_state:
 with st.sidebar:
     logo_path = os.path.join(os.path.dirname(__file__), "logo.png")
     if os.path.exists(logo_path):
-        st.image(logo_path, width=80)
+        st.image(logo_path, width=70)
     else:
-        st.markdown("### 242")
+        st.markdown("<h2 style='color:white; margin-bottom:20px;'>242</h2>", unsafe_allow_html=True)
 
-    st.markdown("<div style='height:16px'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
 
+    # Use a highly styled option_menu
     selected = option_menu(
         menu_title=None,
         options=["Ana Sayfa", "Sitemap Checker", "Feed Checker", "Price Vortex"],
-        icons=["house", "map", "link-45deg", "tornado"],
+        icons=["house-door", "map", "link-45deg", "tornado"],
+        menu_icon="cast",
         default_index=["Ana Sayfa", "Sitemap Checker", "Feed Checker", "Price Vortex"].index(
             st.session_state.page
         ),
         styles={
-            "container": {
-                "padding": "4px 0",
-                "background-color": "transparent",
-            },
-            "icon": {
-                "color": "#888",
-                "font-size": "16px",
-            },
+            "container": {"padding": "0!important", "background-color": "transparent"},
+            "icon": {"color": "#888", "font-size": "16px"},
             "nav-link": {
-                "font-size": "13.5px",
-                "font-weight": "500",
-                "color": "#888",
-                "padding": "10px 14px",
-                "border-radius": "10px",
-                "margin": "2px 0",
-                "--hover-color": "#f0eeff",
+                "font-size": "14px",
+                "text-align": "left",
+                "margin": "4px 0",
+                "color": "#bbb",
+                "border-radius": "12px",
+                "padding": "12px 16px",
+                "transition": "all 0.2s ease",
             },
             "nav-link-selected": {
-                "background-color": "#f0eeff",
+                "background-color": "rgba(111, 85, 255, 0.15)",
                 "color": "#6F55FF",
                 "font-weight": "600",
+                "border": "1px solid rgba(111, 85, 255, 0.2)"
             },
-        },
+        }
     )
 
     if selected != st.session_state.page:
         st.session_state.page = selected
         st.rerun()
 
+    # Footer
     st.markdown("""
-    <div style="position:fixed;bottom:20px;left:0;width:230px;padding:0 20px;box-sizing:border-box;">
-        <hr style="border:none;border-top:1px solid #eee;margin-bottom:10px;">
-        <p style="color:#bbb;font-size:11px;margin:0;">© 2024 242</p>
+    <div style="position:fixed;bottom:20px;left:0;width:240px;padding:0 24px;box-sizing:border-box;">
+        <p style="color:#555;font-size:11px;margin:0;">© 2024 242</p>
     </div>
     """, unsafe_allow_html=True)
 
-# ── Pages ────────────────────────────────────────────────────
-if st.session_state.page == "Ana Sayfa":
+# ── Main Content Area ──────────────────────────────────────────
 
+# If selected from sidebar but want to show on "Home" logic
+if st.session_state.page == "Ana Sayfa":
     # Hero
     st.markdown("""
     <div style="padding:48px 0 40px 0;">
-        <p style="color:#6F55FF;font-size:13px;font-weight:600;letter-spacing:1.5px;margin-bottom:10px;text-transform:uppercase;">Dijital Araçlar</p>
         <h1 style="font-size:2.8rem;font-weight:800;color:#111;line-height:1.15;margin:0 0 14px 0;">
             Dijital Kontrolleri.<br>Kolaylaştırılmış.
         </h1>
@@ -100,11 +98,10 @@ if st.session_state.page == "Ana Sayfa":
             <p>Kırık linkleri ve 404 sayfalarını tespit et.</p>
         </div>
         """, unsafe_allow_html=True)
-        st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
-        if st.button("Sitemap URL gir →", key="qs_sitemap", use_container_width=True):
-            st.session_state.page = "Sitemap Checker"
-            st.rerun()
-
+        st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+        if st.button("Hemen Başla", key="qs_sitemap", use_container_width=True):
+            st.session_state.active_tool = "sitemap"
+            
     with qs2:
         st.markdown("""
         <div class="qs-tile">
@@ -114,10 +111,9 @@ if st.session_state.page == "Ana Sayfa":
             <p>Google veya Facebook feed'indeki URL durumlarını gör.</p>
         </div>
         """, unsafe_allow_html=True)
-        st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
-        if st.button("Feed URL veya dosya yükle →", key="qs_feed", use_container_width=True):
-            st.session_state.page = "Feed Checker"
-            st.rerun()
+        st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+        if st.button("Hemen Başla", key="qs_feed", use_container_width=True):
+            st.session_state.active_tool = "feed"
 
     with qs3:
         st.markdown("""
@@ -125,14 +121,23 @@ if st.session_state.page == "Ana Sayfa":
             <div class="qs-num">03</div>
             <div class="qs-icon">🌪️</div>
             <h3>Fiyat & stok karşılaştır</h3>
-            <p>Ürün CSV'ni Google feed'iyle karşılaştır, uyuşmazlıkları bul.</p>
+            <p>Ürün CSV'ni Google feed'iyle karşılaştır.</p>
         </div>
         """, unsafe_allow_html=True)
-        st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
-        if st.button("CSV ve feed yükle →", key="qs_vortex", use_container_width=True):
-            st.session_state.page = "Price Vortex"
-            st.rerun()
+        st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+        if st.button("Hemen Başla", key="qs_vortex", use_container_width=True):
+            st.session_state.active_tool = "vortex"
 
+    # Render selected tool directly on home page if active_tool is set
+    if "active_tool" in st.session_state:
+        st.markdown("<hr style='margin: 40px 0; border:none; border-top:1px solid #eee;'>", unsafe_allow_html=True)
+        if st.session_state.active_tool == "sitemap":
+            show_sitemap_checker()
+        elif st.session_state.active_tool == "feed":
+            show_feed_checker()
+        elif st.session_state.active_tool == "vortex":
+            show_price_vortex()
+            
 elif st.session_state.page == "Sitemap Checker":
     show_sitemap_checker()
 

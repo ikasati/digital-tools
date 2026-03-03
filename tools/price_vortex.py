@@ -75,8 +75,7 @@ def process_xml_feed(content):
 # ── Main View ──────────────────────────────────────────────
 def show_price_vortex():
     st.markdown("""
-    <div style="padding: 32px 0 24px 0">
-        <p style="color:#6F55FF; font-size:13px; font-weight:600; letter-spacing:1px; margin-bottom:6px;">ARAÇ 3</p>
+    <div style="padding: 16px 0 24px 0">
         <h1 style="margin:0; font-size:2rem;">🌪️ Price Vortex</h1>
         <p style="color:#666; margin-top:8px; font-size:15px;">Ürün CSV'nizi Google Merchant Center feed'iyle karşılaştırın. Fiyat ve stok uyuşmazlıklarını anında tespit edin.</p>
     </div>

@@ -54,8 +54,7 @@ def _reset_feed():
 def show_feed_checker():
     # ── Header ──────────────────────────────────────────────
     st.markdown("""
-    <div style="padding:32px 0 24px 0">
-        <p style="color:#6F55FF;font-size:13px;font-weight:600;letter-spacing:1px;margin-bottom:6px;">ARAÇ 2</p>
+    <div style="padding:16px 0 24px 0">
         <h1 style="margin:0;font-size:2rem;">🔗 Feed Checker</h1>
         <p style="color:#666;margin-top:8px;font-size:15px;">Facebook veya Google Merchant Center feed'lerinizdeki tüm ürün URL'lerinin HTTP durumunu kontrol edin.</p>
     </div>

@@ -55,8 +55,7 @@ def _reset_sitemap():
 def show_sitemap_checker():
     # ── Header ──────────────────────────────────────────────
     st.markdown("""
-    <div style="padding:32px 0 24px 0">
-        <p style="color:#6F55FF;font-size:13px;font-weight:600;letter-spacing:1px;margin-bottom:6px;">ARAÇ 1</p>
+    <div style="padding:16px 0 24px 0">
         <h1 style="margin:0;font-size:2rem;">🧭 Sitemap Checker</h1>
         <p style="color:#666;margin-top:8px;font-size:15px;">Sitemap'lerinizdeki tüm URL'leri tarayın; 404'leri, yönlendirmeleri ve hataları Google'dan önce yakalayın.</p>
     </div>
