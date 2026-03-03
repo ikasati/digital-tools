@@ -143,34 +143,46 @@ def apply_styles():
     /* ── Alert ──────────────────────────────────────── */
     .stAlert { border-radius: 12px !important; font-size:14px !important; }
 
-    /* ── Tool cards on home ─────────────────────────── */
-    .tool-card {
+    /* ── Quickstart tiles on home ───────────────────── */
+    .qs-tile {
         background: #fff;
         border: 1px solid #e8e8e8;
         border-radius: 16px;
-        padding: 28px 24px;
-        box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        padding: 28px 24px 20px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.05);
         transition: all 0.25s ease;
-        min-height: 180px;
+        min-height: 160px;
     }
-    .tool-card:hover {
+    .qs-tile:hover {
         border-color: #6F55FF;
-        box-shadow: 0 8px 24px rgba(111,85,255,0.14);
+        box-shadow: 0 8px 24px rgba(111,85,255,0.13);
         transform: translateY(-3px);
     }
-    .tool-card .card-icon { font-size:28px; margin-bottom:6px; }
-
-    /* ── Yellow accent tag ──────────────────────────── */
-    .yellow-tag {
-        display:inline-block;
-        background:#DCFB3A;
-        color:#000;
-        font-size:10px;
-        font-weight:700;
-        border-radius:5px;
-        padding:2px 7px;
-        letter-spacing:0.3px;
-        margin-bottom:4px;
+    .qs-num {
+        font-size: 11px;
+        font-weight: 700;
+        color: #DCFB3A;
+        background: #111;
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 5px;
+        letter-spacing: 1px;
+        margin-bottom: 12px;
+    }
+    .qs-icon {
+        font-size: 26px;
+        margin-bottom: 8px;
+    }
+    .qs-tile h3 {
+        font-size: 16px !important;
+        font-weight: 700 !important;
+        margin: 0 0 6px 0 !important;
+    }
+    .qs-tile p {
+        color: #777;
+        font-size: 13.5px;
+        line-height: 1.5;
+        margin: 0;
     }
 
     </style>
