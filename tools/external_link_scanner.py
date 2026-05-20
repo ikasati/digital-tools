@@ -96,7 +96,7 @@ def scan_website(start_url, max_pages=100, max_threads=30, ignore_cdn=False, ign
                 with lock:
                     scanned_count += 1
                     if progress_callback:
-                        progress_callback(scanned_count, max_pages)
+                        progress_callback(scanned_count, len(visited) + len(to_visit))
                         
                     for ext in external:
                         if ext not in external_links:
@@ -176,7 +176,7 @@ def show_external_link_scanner():
     
     col1, col2, col3 = st.columns([1, 1, 2])
     with col1:
-        max_pages = st.number_input("Sayfa Limiti", min_value=1, max_value=5000, value=50, step=10, key="scanner_limit")
+        max_threads = st.number_input("Eşzamanlı İstek (Thread)", min_value=1, max_value=200, value=50, step=10, key="scanner_threads", help="Aynı anda taranacak sayfa sayısı. Yüksek değerler siteyi yorabilir.")
     with col2:
         ignore_cdn = st.checkbox("CDN Hariç", value=True, help="CDN linklerini dahil etme")
         ignore_schema = st.checkbox("Schema/W3C Hariç", value=True, help="Schema.org, W3C vs. dahil etme")
@@ -190,26 +190,22 @@ def show_external_link_scanner():
         if not raw_url.startswith("http"):
             raw_url = "https://" + raw_url
             
-        progress_bar = st.progress(0, text="Tarama başlatılıyor...")
-        progress_text = st.empty()
+        progress_info = st.empty()
         
-        def update_progress(scanned, total):
-            ratio = scanned / total
-            # Because we might not scan `total` pages if the site is small, we bound the ratio to 1.0
-            ratio = min(ratio, 1.0)
-            progress_bar.progress(ratio, text=f"Taranan Sayfa: {scanned}/{total}")
+        def update_progress(scanned, discovered):
+            progress_info.info(f"⏳ Taranıyor... Tamamlanan: **{scanned}** / Keşfedilen: **{discovered}**")
             
-        with st.spinner("Site taranıyor... Bu işlem uzun sürebilir."):
+        with st.spinner("Site taranıyor... Bu işlem sayfa sayısına bağlı olarak uzun sürebilir."):
             results = scan_website(
                 raw_url, 
-                max_pages=max_pages, 
+                max_pages=100000, 
+                max_threads=max_threads,
                 ignore_cdn=ignore_cdn, 
                 ignore_schema=ignore_schema,
                 progress_callback=update_progress
             )
             
-        progress_bar.empty()
-        progress_text.empty()
+        progress_info.empty()
         
         df = pd.DataFrame(results['external_links'])
         st.session_state["scanner_results"] = df
