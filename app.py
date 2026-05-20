@@ -5,6 +5,7 @@ from utils.styles import apply_styles
 from tools.sitemap_checker import show_sitemap_checker
 from tools.feed_checker import show_feed_checker
 from tools.price_vortex import show_price_vortex
+from tools.external_link_scanner import show_external_link_scanner
 
 # ── Page Config ─────────────────────────────────────────────
 st.set_page_config(
@@ -42,10 +43,10 @@ with st.sidebar:
     # Use a highly styled option_menu with forced dark theme
     selected = option_menu(
         menu_title=None,
-        options=["Ana Sayfa", "Sitemap Checker", "Feed Checker", "Price Vortex"],
-        icons=["house-door", "map", "link-45deg", "tornado"],
+        options=["Ana Sayfa", "Sitemap Checker", "Feed Checker", "Price Vortex", "External Links"],
+        icons=["house-door", "map", "link-45deg", "tornado", "search"],
         menu_icon="cast",
-        default_index=["Ana Sayfa", "Sitemap Checker", "Feed Checker", "Price Vortex"].index(
+        default_index=["Ana Sayfa", "Sitemap Checker", "Feed Checker", "Price Vortex", "External Links"].index(
             st.session_state.page
         ),
         styles={
@@ -141,6 +142,22 @@ if st.session_state.page == "Ana Sayfa":
             st.session_state.active_tool = "vortex"
             st.rerun()
 
+    # Create a new row for additional tools
+    qs4, qs5, qs6 = st.columns(3, gap="large")
+    with qs4:
+        st.markdown("""
+        <div class="qs-tile">
+            <div class="qs-num">04</div>
+            <div class="qs-icon">🔍</div>
+            <h3>Dış Linkleri Tara</h3>
+            <p>Sitedeki tüm gizli dış linkleri bul.</p>
+        </div>
+        """, unsafe_allow_html=True)
+        st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+        if st.button("Hemen Başla", key="qs_scanner", use_container_width=True):
+            st.session_state.active_tool = "scanner"
+            st.rerun()
+
     # Render selected tool directly on home page if active_tool is set
     if st.session_state.active_tool:
         st.markdown("<hr style='margin: 40px 0; border:none; border-top:1px solid #eee;'>", unsafe_allow_html=True)
@@ -150,6 +167,8 @@ if st.session_state.page == "Ana Sayfa":
             show_feed_checker()
         elif st.session_state.active_tool == "vortex":
             show_price_vortex()
+        elif st.session_state.active_tool == "scanner":
+            show_external_link_scanner()
             
 elif st.session_state.page == "Sitemap Checker":
     show_sitemap_checker()
@@ -159,3 +178,6 @@ elif st.session_state.page == "Feed Checker":
 
 elif st.session_state.page == "Price Vortex":
     show_price_vortex()
+
+elif st.session_state.page == "External Links":
+    show_external_link_scanner()
