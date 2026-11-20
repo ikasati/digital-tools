@@ -1,5 +1,6 @@
 import streamlit as st
 import os
+from datetime import date
 from streamlit_option_menu import option_menu
 from utils.styles import apply_styles
 from tools.sitemap_checker import show_sitemap_checker
@@ -81,9 +82,9 @@ with st.sidebar:
         st.session_state.page = selected
         st.rerun()
 
-    st.markdown("""
+    st.markdown(f"""
     <div style="position:fixed;bottom:20px;left:0;width:240px;padding:0 24px;box-sizing:border-box; background-color:#0f0f0f;">
-        <p style="color:#555;font-size:11px;margin:0;">© 2024 242</p>
+        <p style="color:#555;font-size:11px;margin:0;">© {date.today().year} 242</p>
     </div>
     """, unsafe_allow_html=True)
 

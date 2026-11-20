@@ -1,11 +1,11 @@
 import streamlit as st
 import requests
 import pandas as pd
-import concurrent.futures
-from io import BytesIO
 from urllib.parse import urlparse, unquote
 
-HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+from utils.http import safe_get, BlockedURLError
+from utils.ui import (page_header, step, result_banner, metric_row, read_csv, to_csv_bytes,
+                      filterable_table, run_parallel)
 
 # Result categories, in display order: (key, label, short explanation)
 CATEGORIES = [
@@ -64,8 +64,11 @@ def _check_redirect(idx, source, expected, domain, timeout):
     start_url = _build_source_url(source, domain)
     base = {"#": idx + 1, "Kaynak Adres": source, "Beklenen Hedef": expected, "Başlangıç URL": start_url}
     try:
-        resp = requests.get(start_url, headers=HEADERS, allow_redirects=True, timeout=timeout, stream=True)
+        resp = safe_get(start_url, allow_redirects=True, timeout=timeout, stream=True)
         resp.close()  # we only need headers / status, not the body
+    except BlockedURLError:
+        return {**base, "Sonuç": LABEL["error"], "Gerçek Hedef": "İç ağ adresi engellendi", "Durum Zinciri": "Engellendi",
+                "Adım": None, "Yönlendirme Zinciri": "", "_cat": "error"}
     except requests.TooManyRedirects:
         return {**base, "Sonuç": LABEL["loop"], "Gerçek Hedef": "", "Durum Zinciri": "Döngü",
                 "Adım": None, "Yönlendirme Zinciri": "", "_cat": "loop"}
@@ -102,17 +105,6 @@ def _check_redirect(idx, source, expected, domain, timeout):
     }
 
 
-def _read_csv(uploaded):
-    raw = uploaded.getvalue()
-    for enc in ("utf-8-sig", "cp1254", "latin-1"):
-        try:
-            # sep=None lets pandas sniff comma vs. semicolon exports
-            return pd.read_csv(BytesIO(raw), sep=None, engine="python", encoding=enc, dtype=str)
-        except UnicodeDecodeError:
-            continue
-    raise ValueError("Dosya kodlaması okunamadı.")
-
-
 def _guess_column(columns, hints, fallback):
     for col in columns:
         if any(h in col.lower() for h in hints):
@@ -121,10 +113,10 @@ def _guess_column(columns, hints, fallback):
 
 
 def _template_csv():
-    return pd.DataFrame({
+    return to_csv_bytes(pd.DataFrame({
         "Kaynak Adres": ["/eski-urun", "/kategori/eski"],
         "Yönlendirilecek Adres": ["/yeni-urun", "/kategori/yeni"],
-    }).to_csv(index=False).encode("utf-8")
+    }))
 
 
 def _reset_redirect():
@@ -139,23 +131,11 @@ def _show_results():
     total = len(df)
     ok = counts.get("ok", 0)
     warn = sum(counts.get(k, 0) for k in ("temporary", "chain", "target_bad"))
-    bad = total - ok - warn
 
-    col_title, col_btn = st.columns([4, 1])
-    with col_title:
-        st.success(f"Kontrol tamamlandı: **{total}** yönlendirme test edildi "
-                   f"(`{st.session_state.get('redirect_domain') or 'tam URL'}`).")
-    with col_btn:
-        if st.button("🔄 Yeni Test", key="redirect_reset", use_container_width=True):
-            _reset_redirect()
-            st.rerun()
-
-    m1, m2, m3, m4 = st.columns(4)
-    m1.metric("Toplam", total)
-    m2.metric("✅ Doğru", ok, f"%{ok / total * 100:.0f}" if total else None, delta_color="off")
-    m3.metric("🟡 İyileştirilmeli", warn)
-    m4.metric("❌ Sorunlu", bad)
-
+    result_banner(f"Kontrol tamamlandı: **{total}** yönlendirme test edildi "
+                  f"(`{st.session_state.get('redirect_domain') or 'tam URL'}`).",
+                  "redirect_reset", _reset_redirect)
+    metric_row([("Toplam", total), ("✅ Doğru", ok), ("🟡 İyileştirilmeli", warn), ("❌ Sorunlu", total - ok - warn)])
     if total:
         st.progress(ok / total, text=f"Başarı oranı: %{ok / total * 100:.1f}")
 
@@ -163,51 +143,15 @@ def _show_results():
         for key, label, desc in CATEGORIES:
             st.markdown(f"**{label}** ({counts.get(key, 0)}): {desc}")
 
-    present = [label for key, label, _ in CATEGORIES if counts.get(key)]
-    problems = [l for l in present if l != LABEL["ok"]]
-
-    f1, f2 = st.columns([3, 2])
-    with f1:
-        selected = st.multiselect(
-            "Sonuca göre filtrele", present,
-            default=problems or present, key="redirect_filter",
-            help="Varsayılan olarak yalnızca dikkat gerektiren satırlar gösterilir.",
-        )
-    with f2:
-        query = st.text_input("Adreste ara", placeholder="örn. /kategori", key="redirect_search")
-
-    view = df[df["Sonuç"].isin(selected)]
-    if query.strip():
-        q = query.strip().lower()
-        view = view[view["Kaynak Adres"].str.lower().str.contains(q, regex=False)
-                    | view["Beklenen Hedef"].str.lower().str.contains(q, regex=False)]
-
-    export = df.drop(columns="_cat")
-    d1, d2, _ = st.columns([1, 1, 3])
-    with d1:
-        st.download_button("⬇️ Tümünü İndir", export.to_csv(index=False).encode("utf-8"),
-                           "yonlendirme_sonuclari.csv", "text/csv", key="redirect_dl_all",
-                           use_container_width=True)
-    with d2:
-        st.download_button("⬇️ Filtrelenmişi İndir", view.drop(columns="_cat").to_csv(index=False).encode("utf-8"),
-                           "yonlendirme_filtreli.csv", "text/csv", key="redirect_dl_view",
-                           use_container_width=True, disabled=view.empty)
-
-    if view.empty:
-        st.info("Bu filtreyle eşleşen satır yok." if not (ok == total) else "Tüm yönlendirmeler doğru çalışıyor. 🎉")
-        return
-
-    st.caption(f"{len(view)} / {total} satır gösteriliyor")
-    st.dataframe(
-        view.drop(columns="_cat"),
-        use_container_width=True,
-        hide_index=True,
+    filterable_table(
+        df, key="redirect", file_stem="yonlendirme_sonuclari",
+        ok_labels=(LABEL["ok"],), order=[label for _, label, _ in CATEGORIES],
+        search_cols=("Kaynak Adres", "Beklenen Hedef", "Gerçek Hedef"), search_placeholder="örn. /kategori",
         column_order=["#", "Sonuç", "Kaynak Adres", "Beklenen Hedef", "Gerçek Hedef",
                       "Durum Zinciri", "Adım", "Başlangıç URL", "Yönlendirme Zinciri"],
         column_config={
             "#": st.column_config.NumberColumn("#", width="small"),
             "Başlangıç URL": st.column_config.LinkColumn("Başlangıç URL"),
-            "Gerçek Hedef": st.column_config.TextColumn("Gerçek Hedef"),
             "Adım": st.column_config.NumberColumn("Adım", help="Yönlendirme adımı sayısı", width="small"),
         },
     )
@@ -215,20 +159,16 @@ def _show_results():
 
 # ── Main entry ───────────────────────────────────────────────
 def show_redirect_checker():
-    st.markdown("""
-    <div style="padding:16px 0 24px 0">
-        <h1 style="margin:0;font-size:2rem;">↪️ Redirect Checker</h1>
-        <p style="color:#666;margin-top:8px;font-size:15px;">Yönlendirmeler alanından aldığınız 301 CSV'sini yükleyin; her yönlendirmenin doğru hedefe, tek adımda ve kalıcı olarak gidip gitmediğini kontrol edin.</p>
-    </div>
-    <hr style="border:none;border-top:1px solid #eee;margin-bottom:28px;">
-    """, unsafe_allow_html=True)
+    page_header("↪️", "Redirect Checker",
+                "Yönlendirmeler alanından aldığınız 301 CSV'sini yükleyin; her yönlendirmenin doğru hedefe, "
+                "tek adımda ve kalıcı olarak gidip gitmediğini kontrol edin.")
 
     if st.session_state.get("redirect_ran"):
         _show_results()
         return
 
     # Step 1: upload
-    st.markdown("##### 1 · CSV dosyasını yükleyin")
+    step(1, "CSV dosyasını yükleyin")
     up_col, tpl_col = st.columns([4, 1])
     with up_col:
         uploaded = st.file_uploader("Yönlendirme CSV'si", type=["csv"], key="redirect_upload",
@@ -244,7 +184,7 @@ def show_redirect_checker():
         return
 
     try:
-        df = _read_csv(uploaded)
+        df = read_csv(uploaded)
     except Exception as e:
         st.error(f"CSV okunamadı: {e}")
         return
@@ -278,7 +218,7 @@ def show_redirect_checker():
         return
 
     # Step 2: domain
-    st.markdown("##### 2 · Alan adını yazın")
+    step(2, "Alan adını yazın")
     needs_domain = not pairs[src_col].str.strip().str.startswith("http").all()
     domain = _normalize_domain(st.text_input(
         "Alan adı", placeholder="örn. magazaniz.com", key="redirect_domain_input",
@@ -302,17 +242,10 @@ def show_redirect_checker():
     if not ready:
         st.caption("Kontrolü başlatmak için alan adını girin.")
     if st.button("🚀 Kontrolü Başlat", key="redirect_run", disabled=not ready):
-        rows = list(zip(pairs[src_col], pairs[tgt_col]))
-        results = []
-        pb = st.progress(0.0, text="Yönlendirmeler kontrol ediliyor...")
-        with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as ex:
-            futures = [ex.submit(_check_redirect, i, s, t, domain, timeout) for i, (s, t) in enumerate(rows)]
-            for done, fut in enumerate(concurrent.futures.as_completed(futures), start=1):
-                results.append(fut.result())
-                pb.progress(done / len(rows), text=f"Kontrol ediliyor: {done}/{len(rows)}")
-        pb.empty()
-
-        st.session_state["redirect_df"] = pd.DataFrame(results).sort_values("#").reset_index(drop=True)
+        rows = list(enumerate(zip(pairs[src_col], pairs[tgt_col])))
+        results = run_parallel(lambda r: _check_redirect(r[0], r[1][0], r[1][1], domain, timeout),
+                               rows, workers=workers, text="Yönlendirmeler kontrol ediliyor")
+        st.session_state["redirect_df"] = pd.DataFrame(results)
         st.session_state["redirect_domain"] = domain
         st.session_state["redirect_ran"] = True
         st.rerun()

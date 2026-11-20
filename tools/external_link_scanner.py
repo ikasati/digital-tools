@@ -6,6 +6,9 @@ import concurrent.futures
 import threading
 import pandas as pd
 
+from utils.http import SafeSession
+from utils.ui import page_header, result_banner, metric_row, to_csv_bytes
+
 URL_REGEX = re.compile(r'https?://[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(?:/[^\s"\'<>]*)?')
 
 def get_domain(url):
@@ -19,7 +22,7 @@ def scan_website(start_url, max_pages=100, max_threads=30, ignore_cdn=False, ign
     
     lock = threading.Lock()
     
-    session = requests.Session()
+    session = SafeSession()
     session.headers.update({
         'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
@@ -126,32 +129,25 @@ def _reset_scanner():
         st.session_state.pop(k, None)
 
 def show_external_link_scanner():
-    st.markdown("""
-    <div style="padding:16px 0 24px 0">
-        <h1 style="margin:0;font-size:2rem;">🔍 External Link Scanner</h1>
-        <p style="color:#666;margin-top:8px;font-size:15px;">Googlebot taklidi yapar ve sitenizdeki JS/HTML kaynağında gizli kalan tüm dış linkleri çıkartır.</p>
-    </div>
-    <hr style="border:none;border-top:1px solid #eee;margin-bottom:28px;">
-    """, unsafe_allow_html=True)
+    page_header("🔍", "External Link Scanner",
+                "Googlebot taklidi yapar ve sitenizdeki JS/HTML kaynağında gizli kalan tüm dış linkleri çıkartır.")
 
     if st.session_state.get("scanner_ran"):
         df = st.session_state["scanner_results"]
         stats = st.session_state["scanner_stats"]
 
-        col_title, col_btn = st.columns([4, 1])
-        with col_title:
-            st.success(f"✅ Tarama tamamlandı — **{stats['scanned_pages']}** sayfa tarandı, **{stats['total_external_links']}** dış link bulundu.")
-        with col_btn:
-            if st.button("🔄 Yeni Tarama", key="scanner_reset"):
-                _reset_scanner()
-                st.rerun()
+        result_banner(f"Tarama tamamlandı: **{stats['scanned_pages']}** sayfa tarandı, "
+                      f"**{stats['total_external_links']}** dış link bulundu.",
+                      "scanner_reset", _reset_scanner, reset_label="🔄 Yeni Tarama")
+        metric_row([("Taranan sayfa", stats["scanned_pages"]), ("Dış link", stats["total_external_links"]),
+                    ("Farklı alan adı", df["Dış Link"].map(get_domain).nunique() if len(df) else 0)])
 
         if len(df) > 0:
             col_dl, _ = st.columns([1, 4])
             with col_dl:
                 st.download_button(
                     "⬇️ CSV İndir",
-                    data=df.to_csv(index=False).encode("utf-8"),
+                    data=to_csv_bytes(df),
                     file_name="dis_link_raporu.csv",
                     mime="text/csv",
                     key="scanner_csv_dl"
@@ -182,7 +178,7 @@ def show_external_link_scanner():
         ignore_schema = st.checkbox("Schema/W3C Hariç", value=True, help="Schema.org, W3C vs. dahil etme")
         
     if st.button("🚀 Taramayı Başlat", type="primary", key="scanner_run"):
-        if not url_input:
+        if not url_input.strip():
             st.error("Lütfen geçerli bir URL girin.")
             return
             
