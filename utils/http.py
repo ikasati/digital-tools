@@ -58,6 +58,11 @@ def fetch_bytes(url, timeout=30, max_bytes=MAX_DOWNLOAD_BYTES):
     """Download a file with a hard size cap, transparently gunzipping .gz bodies (also capped)."""
     with safe_get(url, timeout=timeout, stream=True) as r:
         r.raise_for_status()
+        declared = r.headers.get("Content-Length", "")
+        if declared.isdigit() and int(declared) > max_bytes:
+            raise ValueError(f"Dosya çok büyük (>{max_bytes // 1024 // 1024} MB): {url}")
+        # iter_content yields *decoded* bytes, so this cap also bounds Content-Encoding: gzip/br bodies.
+        # urllib3>=2.6 (pinned in requirements.txt) keeps each decoded chunk bounded too.
         buf = bytearray()
         for chunk in r.iter_content(64 * 1024):
             buf += chunk

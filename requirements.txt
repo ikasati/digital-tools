@@ -4,3 +4,4 @@ requests
 beautifulsoup4
 lxml
 streamlit-option-menu
+urllib3>=2.6.0  # bounded streaming decompression (CVE-2025-66471); fetch_bytes relies on it
