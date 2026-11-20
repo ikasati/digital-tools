@@ -3,7 +3,7 @@ import xml.etree.ElementTree as ET
 import pandas as pd
 import streamlit as st
 
-from utils.http import safe_get, check_url, OK_LABEL
+from utils.http import fetch_bytes, check_url, is_http_url, OK_LABEL
 from utils.ui import page_header, result_banner, http_summary, filterable_table, run_parallel, read_csv
 
 G_NS = {"g": "http://base.google.com/ns/1.0"}
@@ -25,7 +25,7 @@ def _parse_feed(content, file_type):
         urls = [e.text.strip() for e in tree.findall(".//g:link", G_NS) if e.text]
         if not urls:
             urls = [e.text.strip() for e in tree.findall(".//{*}link") if e.text and e.text.strip().startswith("http")]
-    return list(dict.fromkeys(u for u in urls if u))
+    return list(dict.fromkeys(u for u in urls if is_http_url(u)))
 
 
 def _load(content, file_type):
@@ -97,14 +97,13 @@ def show_feed_checker():
         if st.button("Feed'i Getir", key="feed_fetch", disabled=not feed_url.strip()):
             with st.spinner("Feed indiriliyor..."):
                 try:
-                    r = safe_get(feed_url.strip(), timeout=30)
-                    r.raise_for_status()
+                    content = fetch_bytes(feed_url.strip())
                 except Exception as e:
                     st.error(f"Feed alınamadı: {e}")
                 else:
-                    ct = r.headers.get("Content-Type", "")
-                    file_type = "csv" if (feed_url.strip().lower().endswith(".csv") or "csv" in ct) else "xml"
-                    _load(r.content, file_type)
+                    head = content[:200].lstrip()
+                    file_type = "csv" if (feed_url.strip().lower().endswith(".csv") or not head.startswith(b"<")) else "xml"
+                    _load(content, file_type)
     with tab_file:
         uploaded = st.file_uploader("Feed dosyası", type=["xml", "csv"], key="feed_file_upload",
                                     help="Google feed'leri genellikle XML, Facebook feed'leri XML veya CSV olur.")

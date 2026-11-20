@@ -2,6 +2,7 @@ import ipaddress
 import os
 import socket
 import time
+import zlib
 from urllib.parse import urlparse
 
 import requests
@@ -24,7 +25,8 @@ def ensure_public_url(url):
     try:
         infos = socket.getaddrinfo(p.hostname, p.port or (443 if p.scheme == "https" else 80))
     except socket.gaierror:
-        return  # let the real request fail with a normal DNS error
+        # Refuse rather than let a second (possibly different) lookup happen inside requests
+        raise requests.ConnectionError(f"Alan adı çözümlenemedi: {p.hostname}")
     for info in infos:
         ip = ipaddress.ip_address(info[4][0])
         if not ip.is_global or ip.is_multicast:
@@ -42,6 +44,33 @@ class SafeSession(requests.Session):
 def safe_get(url, **kwargs):
     with SafeSession() as s:
         return s.get(url, headers=kwargs.pop("headers", HEADERS), **kwargs)
+
+
+MAX_DOWNLOAD_BYTES = 50 * 1024 * 1024  # sitemap spec limit; plenty for product feeds too
+
+
+def is_http_url(url):
+    """True only for http(s) URLs - keeps javascript:/data: values out of clickable link columns."""
+    return urlparse(str(url).strip()).scheme in ("http", "https")
+
+
+def fetch_bytes(url, timeout=30, max_bytes=MAX_DOWNLOAD_BYTES):
+    """Download a file with a hard size cap, transparently gunzipping .gz bodies (also capped)."""
+    with safe_get(url, timeout=timeout, stream=True) as r:
+        r.raise_for_status()
+        buf = bytearray()
+        for chunk in r.iter_content(64 * 1024):
+            buf += chunk
+            if len(buf) > max_bytes:
+                raise ValueError(f"Dosya çok büyük (>{max_bytes // 1024 // 1024} MB): {url}")
+    data = bytes(buf)
+    if data[:2] == b"\x1f\x8b":  # gzip served without Content-Encoding (e.g. sitemap.xml.gz)
+        d = zlib.decompressobj(16 + zlib.MAX_WBITS)
+        out = d.decompress(data, max_bytes)
+        if d.unconsumed_tail:
+            raise ValueError(f"Açılmış dosya {max_bytes // 1024 // 1024} MB sınırını aşıyor: {url}")
+        data = out
+    return data
 
 
 def safe_head(url, **kwargs):

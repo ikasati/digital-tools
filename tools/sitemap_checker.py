@@ -1,23 +1,17 @@
-import gzip
 import xml.etree.ElementTree as ET
 from urllib.parse import urlparse
 
 import pandas as pd
 import streamlit as st
 
-from utils.http import safe_get, check_url, OK_LABEL
+from utils.http import fetch_bytes, check_url, is_http_url, OK_LABEL
 from utils.ui import page_header, result_banner, http_summary, filterable_table, run_parallel
 
 MAX_SITEMAPS = 500  # safety cap for runaway / circular sitemap indexes
 
 
 def _fetch_xml(url):
-    r = safe_get(url, timeout=15)
-    r.raise_for_status()
-    content = r.content
-    if content[:2] == b"\x1f\x8b":  # .xml.gz served without Content-Encoding
-        content = gzip.decompress(content)
-    return ET.fromstring(content)
+    return ET.fromstring(fetch_bytes(url, timeout=15))
 
 
 def _local(tag):
@@ -27,7 +21,7 @@ def _local(tag):
 def _page_urls(root):
     return [
         loc.text.strip() for loc in root.findall(".//{*}url/{*}loc")
-        if loc.text and "/cdn." not in loc.text
+        if loc.text and "/cdn." not in loc.text and is_http_url(loc.text)
     ]
 
 
@@ -58,7 +52,7 @@ def _collect(start_url, on_progress):
             failed.append({"Sitemap": sm, "Hata": type(e).__name__})
             continue
         if _local(root.tag) == "sitemapindex":
-            queue.extend(l.text.strip() for l in root.findall("{*}sitemap/{*}loc") if l.text)
+            queue.extend(l.text.strip() for l in root.findall("{*}sitemap/{*}loc") if l.text and is_http_url(l.text))
         else:
             read.append(sm)
             urls.extend(_page_urls(root))

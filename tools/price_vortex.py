@@ -4,7 +4,7 @@ import xml.etree.ElementTree as ET
 import pandas as pd
 import streamlit as st
 
-from utils.http import safe_get
+from utils.http import fetch_bytes, is_http_url
 from utils.ui import page_header, step, result_banner, metric_row, filterable_table, read_csv, to_csv_bytes
 
 G_NS = {"g": "http://base.google.com/ns/1.0"}
@@ -58,6 +58,8 @@ def process_xml_feed(content):
     rows = []
     for item in items:
         link = _text(item, "g:link")
+        if not is_http_url(link):
+            continue  # skip javascript:/data:/empty links; they'd render as clickable links
         path = link.split("://", 1)[-1].split("/", 1)[-1] if "://" in link else link.lstrip("/")
         slug, _, vid = path.partition("?vid=")
         rows.append({
@@ -219,9 +221,7 @@ def show_price_vortex():
                 if st.button("Feed'i Getir", key="vortex_fetch", disabled=not feed_url.strip()):
                     with st.spinner("Feed indiriliyor..."):
                         try:
-                            r = safe_get(feed_url.strip(), timeout=30)
-                            r.raise_for_status()
-                            st.session_state["vortex_feed_content"] = r.content
+                            st.session_state["vortex_feed_content"] = fetch_bytes(feed_url.strip())
                             st.session_state["vortex_feed_name"] = feed_url.strip()
                             st.rerun()
                         except Exception as e:
