@@ -6,6 +6,7 @@ from tools.sitemap_checker import show_sitemap_checker
 from tools.feed_checker import show_feed_checker
 from tools.price_vortex import show_price_vortex
 from tools.external_link_scanner import show_external_link_scanner
+from tools.redirect_checker import show_redirect_checker
 
 # ── Page Config ─────────────────────────────────────────────
 st.set_page_config(
@@ -18,37 +19,42 @@ st.set_page_config(
 # Apply global CSS
 apply_styles()
 
+# ── Tool registry ────────────────────────────────────────────
+# Single source of truth: sidebar, home tiles and routing are all built from this list.
+TOOLS = [
+    {"page": "Sitemap Checker",  "icon": "map",          "emoji": "🧭", "title": "Sitemap kontrol et",
+     "desc": "Kırık linkleri ve 404 sayfalarını tespit et.",                   "render": show_sitemap_checker},
+    {"page": "Feed Checker",     "icon": "link-45deg",   "emoji": "🔗", "title": "Feed URL'lerini kontrol et",
+     "desc": "Google veya Facebook feed'indeki URL durumlarını gör.",           "render": show_feed_checker},
+    {"page": "Price Vortex",     "icon": "tornado",      "emoji": "🌪️", "title": "Fiyat & stok karşılaştır",
+     "desc": "Ürün CSV'ni Google feed'iyle karşılaştır.",                       "render": show_price_vortex},
+    {"page": "External Links",   "icon": "search",       "emoji": "🔍", "title": "Dış linkleri tara",
+     "desc": "Sitedeki tüm gizli dış linkleri bul.",                            "render": show_external_link_scanner},
+    {"page": "Redirect Checker", "icon": "arrow-left-right", "emoji": "↪️", "title": "301'leri doğrula",
+     "desc": "Yönlendirme CSV'ni yükle, hatalı ve zincirli 301'leri bul.",      "render": show_redirect_checker},
+]
+TOOL_BY_PAGE = {t["page"]: t for t in TOOLS}
+HOME = "Ana Sayfa"
+PAGES = [HOME] + [t["page"] for t in TOOLS]
+
 # ── Session state ────────────────────────────────────────────
-if "page" not in st.session_state:
-    st.session_state.page = "Ana Sayfa"
-if "active_tool" not in st.session_state:
-    st.session_state.active_tool = None
+if st.session_state.get("page") not in PAGES:
+    st.session_state.page = HOME
 
 # ── Sidebar ──────────────────────────────────────────────────
 with st.sidebar:
-    # Force dark background for logo area
-    st.markdown("""
-        <div style='background-color:#0f0f0f; padding: 20px 0 10px 0;'>
-    """, unsafe_allow_html=True)
-    
     logo_path = os.path.join(os.path.dirname(__file__), "logo.png")
     if os.path.exists(logo_path):
         st.image(logo_path, width=70)
     else:
-        st.markdown("<h2 style='color:white; margin:0;'>242</h2>", unsafe_allow_html=True)
-    
-    st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown("<h2 style='color:white; margin:0; padding-top:12px;'>242</h2>", unsafe_allow_html=True)
     st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
 
-    # Use a highly styled option_menu with forced dark theme
     selected = option_menu(
         menu_title=None,
-        options=["Ana Sayfa", "Sitemap Checker", "Feed Checker", "Price Vortex", "External Links"],
-        icons=["house-door", "map", "link-45deg", "tornado", "search"],
-        menu_icon="cast",
-        default_index=["Ana Sayfa", "Sitemap Checker", "Feed Checker", "Price Vortex", "External Links"].index(
-            st.session_state.page
-        ),
+        options=PAGES,
+        icons=["house-door"] + [t["icon"] for t in TOOLS],
+        default_index=PAGES.index(st.session_state.page),
         styles={
             "container": {"padding": "0!important", "background-color": "#0f0f0f"},
             "icon": {"color": "#888", "font-size": "16px"},
@@ -73,111 +79,42 @@ with st.sidebar:
 
     if selected != st.session_state.page:
         st.session_state.page = selected
-        # If user clicks sidebar, reset homepage tool if it doesn't match
-        st.session_state.active_tool = None
         st.rerun()
 
-    # Footer
     st.markdown("""
     <div style="position:fixed;bottom:20px;left:0;width:240px;padding:0 24px;box-sizing:border-box; background-color:#0f0f0f;">
         <p style="color:#555;font-size:11px;margin:0;">© 2024 242</p>
     </div>
     """, unsafe_allow_html=True)
 
-# ── Main Content Area ──────────────────────────────────────────
-
-if st.session_state.page == "Ana Sayfa":
-    # Hero
-    st.markdown("""
+# ── Main Content Area ────────────────────────────────────────
+if st.session_state.page == HOME:
+    st.markdown(f"""
     <div style="padding:48px 0 40px 0;">
         <h1 style="font-size:2.8rem;font-weight:800;color:#111;line-height:1.15;margin:0 0 14px 0;">
             Dijital Kontrolleri.<br>Kolaylaştırılmış.
         </h1>
-        <p style="color:#666;font-size:16px;margin:0;">Ne yapmak istiyorsun?</p>
+        <p style="color:#666;font-size:16px;margin:0;">{len(TOOLS)} araç hazır. Ne yapmak istiyorsun?</p>
     </div>
     """, unsafe_allow_html=True)
 
-    # Quick-start tiles
-    qs1, qs2, qs3 = st.columns(3, gap="large")
-
-    with qs1:
-        st.markdown("""
-        <div class="qs-tile">
-            <div class="qs-num">01</div>
-            <div class="qs-icon">🧭</div>
-            <h3>Sitemap kontrol et</h3>
-            <p>Kırık linkleri ve 404 sayfalarını tespit et.</p>
-        </div>
-        """, unsafe_allow_html=True)
-        st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
-        if st.button("Hemen Başla", key="qs_sitemap", use_container_width=True):
-            st.session_state.active_tool = "sitemap"
-            st.rerun()
-            
-    with qs2:
-        st.markdown("""
-        <div class="qs-tile">
-            <div class="qs-num">02</div>
-            <div class="qs-icon">🔗</div>
-            <h3>Feed URL'lerini kontrol et</h3>
-            <p>Google veya Facebook feed'indeki URL durumlarını gör.</p>
-        </div>
-        """, unsafe_allow_html=True)
-        st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
-        if st.button("Hemen Başla", key="qs_feed", use_container_width=True):
-            st.session_state.active_tool = "feed"
-            st.rerun()
-
-    with qs3:
-        st.markdown("""
-        <div class="qs-tile">
-            <div class="qs-num">03</div>
-            <div class="qs-icon">🌪️</div>
-            <h3>Fiyat & stok karşılaştır</h3>
-            <p>Ürün CSV'ni Google feed'iyle karşılaştır.</p>
-        </div>
-        """, unsafe_allow_html=True)
-        st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
-        if st.button("Hemen Başla", key="qs_vortex", use_container_width=True):
-            st.session_state.active_tool = "vortex"
-            st.rerun()
-
-    # Create a new row for additional tools
-    qs4, qs5, qs6 = st.columns(3, gap="large")
-    with qs4:
-        st.markdown("""
-        <div class="qs-tile">
-            <div class="qs-num">04</div>
-            <div class="qs-icon">🔍</div>
-            <h3>Dış Linkleri Tara</h3>
-            <p>Sitedeki tüm gizli dış linkleri bul.</p>
-        </div>
-        """, unsafe_allow_html=True)
-        st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
-        if st.button("Hemen Başla", key="qs_scanner", use_container_width=True):
-            st.session_state.active_tool = "scanner"
-            st.rerun()
-
-    # Render selected tool directly on home page if active_tool is set
-    if st.session_state.active_tool:
-        st.markdown("<hr style='margin: 40px 0; border:none; border-top:1px solid #eee;'>", unsafe_allow_html=True)
-        if st.session_state.active_tool == "sitemap":
-            show_sitemap_checker()
-        elif st.session_state.active_tool == "feed":
-            show_feed_checker()
-        elif st.session_state.active_tool == "vortex":
-            show_price_vortex()
-        elif st.session_state.active_tool == "scanner":
-            show_external_link_scanner()
-            
-elif st.session_state.page == "Sitemap Checker":
-    show_sitemap_checker()
-
-elif st.session_state.page == "Feed Checker":
-    show_feed_checker()
-
-elif st.session_state.page == "Price Vortex":
-    show_price_vortex()
-
-elif st.session_state.page == "External Links":
-    show_external_link_scanner()
+    # Tiles laid out 3 per row; "Hemen Başla" jumps straight to the tool page
+    for row_start in range(0, len(TOOLS), 3):
+        cols = st.columns(3, gap="large")
+        for col, (i, tool) in zip(cols, enumerate(TOOLS[row_start:row_start + 3], start=row_start + 1)):
+            with col:
+                st.markdown(f"""
+                <div class="qs-tile">
+                    <div class="qs-num">{i:02d}</div>
+                    <div class="qs-icon">{tool["emoji"]}</div>
+                    <h3>{tool["title"]}</h3>
+                    <p>{tool["desc"]}</p>
+                </div>
+                """, unsafe_allow_html=True)
+                st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+                if st.button("Hemen Başla", key=f"qs_{i}", use_container_width=True):
+                    st.session_state.page = tool["page"]
+                    st.rerun()
+        st.markdown("<div style='height:24px'></div>", unsafe_allow_html=True)
+else:
+    TOOL_BY_PAGE[st.session_state.page]["render"]()
